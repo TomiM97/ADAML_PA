@@ -25,3 +25,5 @@ plot(wavelengths2, X2(1,:), "b.")
 
 coeff1 = pca(X1);
 coeff2 = pca(X2);
+
+% PCA
