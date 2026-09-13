@@ -13,11 +13,18 @@ X = T(:,21:end);
 rNames = Y.Properties.VariableNames;
 wavelenghts = str2double(X.Properties.VariableNames);
 
+T2 = readtable("data_part_2.csv", ReadVariableNames=true,VariableNamingRule="preserve",ReadRowNames=true);
+Y2 = T2(:,1:37);
+X2 = T2(:,38:end);
+rNames2 = Y2.Properties.VariableNames;
+wavelenghts2 = str2double(X2.Properties.VariableNames);
+
 
 
 %% Data exploration
 summary(Y);
 missing_X = anymissing(X); 
+missing_X2 = anymissing(X2);
 
 
 
