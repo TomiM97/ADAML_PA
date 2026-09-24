@@ -52,6 +52,9 @@ legend({'maximum', 'mean', 'minimum'},'FontSize',12)
 %% PCA
 [loadings, scores, latent, tsqrd, explained] = pca(X);
 
+trait = 11;  % 1-20 
+div = 225.23885776;
+
 % PC1-PC2 scores
 figure;
 biplot(loadings(1:15:end,1:2))%,'Scores', scores(I(:,trait),1:2))
