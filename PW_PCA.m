@@ -90,45 +90,13 @@ title('Chlorophyll')
 grid on;
 colorbar;
 
-%%
 
-x1 = X(I(:,1),:);   % Anthocyanin
-y1 = Y(I(:,1),1);
-x2 = X(I(:,2),:);   % Boron
-y2 = Y(I(:,2),2);
-x3 = X(I(:,3),:);   % Carbon
-y3 = Y(I(:,3),3);
-x4 = X(I(:,4),:);   % Calcium
-y4 = Y(I(:,4),4);
-x5 = X(I(:,5),:);   % Carotenoid
-y5 = Y(I(:,5),5);
-x6 = X(I(:,6),:);   % Cellulose
-y6 = Y(I(:,6),6);
-x7 = X(I(:,7),:);   % Chlorophyll
-y7 = Y(I(:,7),7);
-x8 = X(I(:,8),:);   % Copper
-y8 = Y(I(:,8),8);
-x9 = X(I(:,9),:);   % EWT
-y9 = Y(I(:,9),9);
-x10 = X(I(:,10),:);   % Fiber
-y10 = Y(I(:,10),10);
-x11 = X(I(:,11),:);   % LAI
-y11 = Y(I(:,11),11);
-x12 = X(I(:,12),:);   % LMA
-y12 = Y(I(:,12),12);
-x13 = X(I(:,13),:);   % Lignin
-y13 = Y(I(:,13),13);
-x14 = X(I(:,14),:);   % Magnesium
-y14 = Y(I(:,14),14);
-x15 = X(I(:,15),:);   % Manganese
-y15 = Y(I(:,15),15);
-x16 = X(I(:,16),:);   % Nitrogen
-y16 = Y(I(:,16),16);
-x17 = X(I(:,17),:);   % NSC
-y17 = Y(I(:,17),17);
-x18 = X(I(:,18),:);   % Phosphorus
-y18 = Y(I(:,18),18);
-x19 = X(I(:,19),:);   % Potassium
-y19 = Y(I(:,19),19);
-x20 = X(I(:,20),:);   % Sulfur
-y20 = Y(I(:,20),20);
+%% separating based on trait
+
+for i = 1:20
+    x{i} = X(I(:,i),:); 
+    y{i} = Y(I(:,i),i);
+end
+
+
+
