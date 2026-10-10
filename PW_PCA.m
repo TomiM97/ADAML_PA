@@ -30,7 +30,10 @@ missing_X2 = anymissing(X2);
 Y = table2array(Y);
 X = table2array(X);
 
-I = ~isnan(Y);
+
+%% finding available observations
+I = ~isnan(Y);    
+I = ~isnan(Y2);
 
 
 %% Vizualization
@@ -53,18 +56,19 @@ legend({'maximum', 'mean', 'minimum'},'FontSize',12)
 [loadings, scores, latent, tsqrd, explained] = pca(X);
 
 trait = 11;  % 1-20 
-div = 225.23885776;
+div = 225.23885776;  % for correct scale
 
 % PC1-PC2 scores
 figure;
-biplot(loadings(1:15:end,1:2))%,'Scores', scores(I(:,trait),1:2))
+biplot(loadings(1:15:end,1:2))
 hold on
 scatter(scores(I(:,trait),1)/div, scores(I(:,trait),2)/div,[],Y(I(:,trait),trait),".")
 colorbar;
-xlabel('PC1 score');
-ylabel('PC2 score');
-legend('Coeff 1', 'Coeff 2', '','Scores')
+xlabel('PC1(73.8%)');
+ylabel('PC2(20.9%)');
+legend('Loadings', 'Scores')
 grid on;
+
 % PC1-PC3 loadings
 figure
 plot(wavelenghts, loadings(:,1:3), 'LineWidth', 1.2);
@@ -80,12 +84,13 @@ pareto(explained);
 xlabel('Principal component');
 ylabel('Explained variance (%)');
 grid on;
+
 % PC2-PC3 scores
 trait = 7;  % 1-20
 figure;
 scatter(scores(I(:,trait),2), scores(I(:,trait),3),[],Y(I(:,trait),trait),"filled")
-xlabel('PC2 score');
-ylabel('PC3 score');
+xlabel('PC2(20.9%)');
+ylabel('PC3(2.3%)');
 title('Chlorophyll')
 grid on;
 colorbar;
