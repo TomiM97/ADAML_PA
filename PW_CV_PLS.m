@@ -32,32 +32,52 @@ missing_X2 = anymissing(X2);
 Y = table2array(Y);
 X = table2array(X);
 
+Y2 = table2array(Y2);
+X2 = table2array(X2);
+
 ref = mean(X, 1)';
 %X = emsc_fun(X', ref, wavelengths(:))';
 
 I = ~isnan(Y);
 maxLV     = 20;          % largest number of latent variables tested
 Kfold     = 5;           % cross-validation folds
-testFrac  = 0.2;         % share of part 1 kept as hold-out test set
 wl = wavelengths(:)';
 
-% 2. Data per trait, grouping, hold-out split
-I = I & ~any(isnan(X), 2);                  % drop rows with missing spectra
+% 2. Data per trait: part 1 for training, part 2 for testing
 
-% Observations that belong together (same plant, plot, site) must stay in the same fold.
-% Default: every observation is its own group. Derive groups from the row names if they encode this:
-% groupId = extractBefore(T.Properties.RowNames, '_');
+I = ~isnan(Y);
+I = I & ~any(isnan(X), 2);
+
+I2 = ~isnan(Y2);
+I2 = I2 & ~any(isnan(X2), 2);
+
 groupId = (1:size(X,1))';
 
+x = cell(1,numOfvariables);
+y = cell(1,numOfvariables);
+g = cell(1,numOfvariables);
 
-x = cell(1,numOfvariables);  y = cell(1,numOfvariables);  g = cell(1,numOfvariables);
-xTrain = x;  yTrain = y;  gTrain = g;  xTest = x;  yTest = y;
+xTrain = x;
+yTrain = y;
+gTrain = g;
+xTest = x;
+yTest = y;
+
 for k = 1:numOfvariables
-    x{k} = X(I(:,k), :);   y{k} = Y(I(:,k), k);   g{k} = groupId(I(:,k));
 
-    isTest = make_folds(g{k}, round(1/testFrac), 1) == 1;    % fold 1 = hold-out test set
-    xTrain{k} = x{k}(~isTest,:);   yTrain{k} = y{k}(~isTest);   gTrain{k} = g{k}(~isTest);
-    xTest{k}  = x{k}(isTest,:);    yTest{k}  = y{k}(isTest);
+    % Training data: data_part_1
+    x{k} = X(I(:,k), :);
+    y{k} = Y(I(:,k), k);
+    g{k} = groupId(I(:,k));
+
+    xTrain{k} = x{k};
+    yTrain{k} = y{k};
+    gTrain{k} = g{k};
+
+    % Independent test data: data_part_2
+    xTest{k} = X2(I2(:,k), :);
+    yTest{k} = Y2(I2(:,k), k);
+
 end
 
 % SELECT WAVELENGTHS WITH UNBIASED CROSS-VALIDATION
@@ -192,7 +212,7 @@ plot_lv_heatmap(Q2cvMean, rNames, ...
 toc
 % nLVchosen(11) = 4;                         % manual override after inspecting the heatmap
 
-%% 5. Final PLS model per trait and hold-out evaluation
+%% 5. Final PLS model per trait and testing
 BETAall  = cell(1, numOfvariables);          % BETAall{k}(1) = intercept, (2:end) = coefficients
 R2test   = nan(numOfvariables,1);
 RMSEtest = nan(numOfvariables,1);
@@ -248,6 +268,256 @@ xlabel('Predicted'); ylabel('Residual'); title('Residuals vs predicted')
 subplot(1,3,3)
 histogram(res, 30); grid on
 xlabel('Residual'); ylabel('Frequency'); title('Residual histogram')
+
+%% Create measured and predicted trait matrices
+
+% Keep samples with complete spectra in data_part_2
+validX2 = ~any(isnan(X2), 2);
+
+X2_eval = X2(validX2, :);
+Ytrue = Y2(validX2, :);
+
+numTest = size(X2_eval, 1);
+Ypred = nan(numTest, numOfvariables);
+
+% Train one PLS model per trait and predict all test samples
+for k = 1:numOfvariables
+
+    [~,~,~,~,BETA] = plsregress( ...
+        xTrain{k}, yTrain{k}, nLVchosen(k));
+
+    Ypred(:, k) = pls_predict(BETA, X2_eval);
+
+end
+
+% Trait names
+traitNames = rNames;
+
+% Matrices can contain NaNs in Ytrue where measurements are missing
+disp(size(Ytrue))
+disp(size(Ypred))
+
+% Optional: convert the matrices to tables with trait names
+YtrueTable = array2table(Ytrue, ...
+    'VariableNames', traitNames);
+
+YpredTable = array2table(Ypred, ...
+    'VariableNames', traitNames);
+
+%% Residual analysis and evaluation for all traits
+
+Ytrue = table2array(YtrueTable);
+Ypred = table2array(YpredTable);
+
+numOfvariables = size(Ytrue, 2);
+rNames = YtrueTable.Properties.VariableNames;
+
+R2test   = nan(numOfvariables, 1);
+RMSEtest = nan(numOfvariables, 1);
+MAEtest  = nan(numOfvariables, 1);
+MeanResidual = nan(numOfvariables, 1);
+StdResidual  = nan(numOfvariables, 1);
+
+Residuals = nan(size(Ytrue));
+
+for k = 1:numOfvariables
+
+    valid = ~isnan(Ytrue(:,k)) & ~isnan(Ypred(:,k));
+
+    yTrue = Ytrue(valid,k);
+    yPred = Ypred(valid,k);
+
+    res = yTrue - yPred;
+    Residuals(valid,k) = res;
+
+    if isempty(res)
+        continue;
+    end
+
+    R2test(k) = 1 - sum(res.^2) / ...
+        sum((yTrue - mean(yTrue)).^2);
+
+    RMSEtest(k) = sqrt(mean(res.^2));
+    MAEtest(k) = mean(abs(res));
+
+    MeanResidual(k) = mean(res);
+    StdResidual(k) = std(res);
+end
+
+%% Summary table
+
+summaryTable = table( ...
+    rNames(:), ...
+    sum(~isnan(Ytrue) & ~isnan(Ypred), 1)', ...
+    R2test, RMSEtest, MAEtest, MeanResidual, StdResidual, ...
+    'VariableNames', ...
+    {'Trait','nTest','R2_test','RMSE_test','MAE_test', ...
+     'MeanResidual','StdResidual'});
+
+disp(summaryTable)
+
+%% Residual plots for each trait
+% now only for first
+
+for k = 1:1
+
+    valid = ~isnan(Ytrue(:,k)) & ~isnan(Ypred(:,k));
+
+    yTrue = Ytrue(valid,k);
+    yPred = Ypred(valid,k);
+    res = yTrue - yPred;
+
+    if isempty(res)
+        continue;
+    end
+
+    figure('Name', ['Residual analysis - ', rNames{k}]);
+
+    tiledlayout(2,2);
+
+    % Predicted vs measured
+    nexttile;
+    scatter(yTrue, yPred, 'filled');
+    hold on;
+    limits = [min([yTrue; yPred]), max([yTrue; yPred])];
+    plot(limits, limits, 'k--');
+    xlabel('Measured');
+    ylabel('Predicted');
+    title('Measured vs predicted');
+    grid on;
+    axis square;
+
+    % Residuals vs predicted
+    nexttile;
+    scatter(yPred, res, 'filled');
+    hold on;
+    yline(0, 'k--');
+    xlabel('Predicted');
+    ylabel('Residual (measured - predicted)');
+    title('Residuals vs predicted');
+    grid on;
+
+    % Residual histogram
+    nexttile;
+    histogram(res);
+    xlabel('Residual');
+    ylabel('Frequency');
+    title('Residual distribution');
+    grid on;
+
+    % Normal Q-Q plot
+    nexttile;
+    qqplot(res);
+    title('Residual normal Q-Q plot');
+
+    sgtitle(rNames{k}, 'Interpreter', 'none');
+
+end
+
+
+%% PCA of measured trait matrix
+
+Y = table2array(YtrueTable);
+traitNames = YtrueTable.Properties.VariableNames;
+
+% Keep traits with at least two measured observations
+nObserved = sum(isfinite(Y), 1);
+validTraits = nObserved >= 2;
+
+Y = Y(:, validTraits);
+traitNamesPCA = traitNames(validTraits);
+
+% Remove rows where all retained traits are missing
+validRows = any(isfinite(Y), 2);
+Y = Y(validRows, :);
+
+% Impute missing values using the mean of each trait
+for j = 1:size(Y, 2)
+    missing = ~isfinite(Y(:, j));
+    Y(missing, j) = mean(Y(~missing, j));
+end
+
+% Remove constant traits
+traitStd = std(Y, 0, 1);
+validTraits = traitStd > 0;
+
+Y = Y(:, validTraits);
+traitNamesPCA = traitNamesPCA(validTraits);
+
+% Check that PCA can be performed
+if size(Y, 1) < 2 || size(Y, 2) < 2
+    error('PCA requires at least two samples and two non-constant traits.');
+end
+
+% Perform PCA
+[coeff, score, latent, ~, explained, mu] = pca(Y);
+
+% Variance explained table
+PC = (1:numel(explained))';
+
+varianceTable = table(PC, explained(:), cumsum(explained(:)), ...
+    'VariableNames', ...
+    {'PC','VarianceExplained_pct','CumulativeVariance_pct'});
+
+disp(varianceTable)
+
+% Trait loadings
+loadingsTable = array2table(coeff, ...
+    'VariableNames', compose('PC%d', 1:size(coeff, 2)), ...
+    'RowNames', traitNamesPCA);
+
+disp(loadingsTable)
+
+% Plot variance explained
+figure('Name', 'PCA variance explained');
+tiledlayout(1, 2);
+
+nexttile;
+pareto(explained(:));
+xlabel('Principal component');
+ylabel('Variance explained (%)');
+title('Variance explained by each PC');
+
+nexttile;
+plot(PC, cumsum(explained(:)), '-o');
+xlabel('Number of principal components');
+ylabel('Cumulative variance explained (%)');
+title('Cumulative variance');
+grid on;
+
+% Plot sample scores
+figure('Name', 'PCA scores');
+
+scatter(score(:, 1), score(:, 2), 35, 'filled');
+xlabel(sprintf('PC1 (%.1f%%)', explained(1)));
+ylabel(sprintf('PC2 (%.1f%%)', explained(2)));
+title('PCA score plot of measured traits');
+grid on;
+axis equal;
+
+% Plot trait loading vectors
+figure('Name', 'PCA trait loadings');
+
+quiver(zeros(size(coeff, 1), 1), zeros(size(coeff, 1), 1), ...
+    coeff(:, 1), coeff(:, 2), 0, 'LineWidth', 1.2);
+hold on;
+
+for k = 1:numel(traitNamesPCA)
+    text(coeff(k, 1), coeff(k, 2), [' ', traitNamesPCA{k}], ...
+        'Interpreter', 'none', 'FontSize', 8);
+end
+
+xlabel('PC1 loading');
+ylabel('PC2 loading');
+title('Trait loading vectors');
+grid on;
+xline(0, ':');
+yline(0, ':');
+axis equal;
+
+fprintf('Number of samples used in PCA: %d\n', size(Y, 1));
+fprintf('Number of traits used in PCA: %d\n', size(Y, 2));
+fprintf('Number of imputed values: %d\n', sum(~isfinite(Y(:))));
 
 %% Local functions
 
