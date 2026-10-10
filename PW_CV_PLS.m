@@ -36,8 +36,8 @@ Y2 = table2array(Y2);
 X2 = table2array(X2);
 
 ref = mean(X, 1)';
-%X = emsc_fun(X', ref, wavelengths(:))';
-
+X = emsc_fun(X', ref, wavelengths(:))';
+X2 = emsc_fun(X2', ref, wavelengths(:))';
 I = ~isnan(Y);
 maxLV     = 20;          % largest number of latent variables tested
 Kfold     = 5;           % cross-validation folds
@@ -132,10 +132,8 @@ for k = 1:numOfvariables
         typicalStep = median(deltaLambda(validDiff));
         validDiff = validDiff & deltaLambda <= 1.5 * typicalStep;
         validDiff(excluded(excluded <= numel(validDiff))) = false;
-        validDiff(max(1, excluded(excluded > 1)-1)) = ...
-            validDiff(max(1, excluded(excluded > 1)-1));
-        derivative_strength = max(abs(x_diff(:, validDiff)), [], 1) ./ ...
-            deltaLambda(validDiff);
+        validDiff(max(1, excluded(excluded > 1)-1)) = validDiff(max(1, excluded(excluded > 1)-1));
+        derivative_strength = max(abs(x_diff(:, validDiff)), [], 1) ./ deltaLambda(validDiff);
         candidateIdx = find(validDiff);
         [~, order] = maxk(derivative_strength, ...
             min(numWavelengths, numel(derivative_strength)));
