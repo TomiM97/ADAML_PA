@@ -29,6 +29,8 @@ missing_X2 = anymissing(X2);
 %% Data to arrays
 Y = table2array(Y);
 X = table2array(X);
+Y2 = table2array(Y2);
+X2 = table2array(X2);
 
 
 %% finding available observations
