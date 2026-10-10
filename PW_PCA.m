@@ -33,7 +33,7 @@ X = table2array(X);
 
 %% finding available observations
 I = ~isnan(Y);    
-I = ~isnan(Y2);
+I2 = ~isnan(Y2);
 
 
 %% Vizualization
