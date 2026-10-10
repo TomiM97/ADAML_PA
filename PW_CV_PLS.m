@@ -473,7 +473,7 @@ figure('Name', 'PCA variance explained');
 tiledlayout(1, 2);
 
 nexttile;
-pareto(explained(:));
+pareto(explained(:),0.999);
 xlabel('Principal component');
 ylabel('Variance explained (%)');
 title('Variance explained by each PC');
