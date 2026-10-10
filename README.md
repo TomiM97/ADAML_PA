@@ -10,3 +10,6 @@ Creating	individual prediction models for leaf and canopy traits. Predicting the
 ## Expolatory analysis
 
 Simple analysis on the data was done using PCA and other methods. These can be found in [PW](https://github.com/TomiM97/ADAML_PA/blob/master/PW_PCA.m) and [pca_analysis](https://github.com/TomiM97/ADAML_PA/blob/master/pca_analysis_file.m).
+
+## Initial model
+Initial models were created using PLS1.
