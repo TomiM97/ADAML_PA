@@ -1,4 +1,28 @@
 function [ordered_by_pls1,ncomp,rmse_te,mae_te,yhat_te,res_te] = pls1_regression(X,Y,Xtest,Ytest,Kfold,maxLV,doPlots)
+%
+%
+% Inputs:
+% X = X matrix of predictors for training
+% Y = Y vector of response variables for training
+% Xtest = X matrix of predictors for testing
+% Ytest = Y vector of response variables for testing
+% Kfold = number of folds for cross-validation
+% maxLV = maximum number of latent variables chosen
+% doPlots = draws plots if set to true
+% 
+%
+% Outputs:
+% ordered_by_pls1 = indices of X matrix columns that were chosen as the
+%                   variables to be used based on the R2-method
+% ncomp = number of latent variables chosen
+% rmse_te = RMSE from the test set
+% mae_te = MAE from the test set
+% yhat_te = predicted test set values
+% res_te = residuals from test set
+% 
+% 
+
+
 x = X;
 [y, ymu, ysigma] = zscore(Y);
 xTest = Xtest;
