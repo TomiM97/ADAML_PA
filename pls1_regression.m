@@ -1,4 +1,4 @@
-function [ordered_by_pls1,ncomp,rmse_te,mae_te,yhat_te,res_te] = pls1_regression(X,Y,Xtest,Ytest,Kfold,maxLV,doPlots)
+function [ordered_by_pls1,ncomp,rmse_te,mae_te] = pls1_regression(X,Y,Xtest,Ytest,Kfold,maxLV,doPlots)
 %
 %
 % Inputs:
@@ -17,8 +17,6 @@ function [ordered_by_pls1,ncomp,rmse_te,mae_te,yhat_te,res_te] = pls1_regression
 % ncomp = number of latent variables chosen
 % rmse_te = RMSE from the test set
 % mae_te = MAE from the test set
-% yhat_te = predicted test set values
-% res_te = residuals from test set
 % 
 % 
 
@@ -30,7 +28,7 @@ yTest = (Ytest-ymu)/ysigma;
 
 varNames = 1:1:1721;
 
-[ordered_by_pls1, pls1_keep, R2_hist] = r2_pls1_forward_selection(x, y, varNames, 1e-3, size(x,2));
+[ordered_by_pls1, pls1_keep] = r2_pls1_forward_selection(x, y, varNames, 1e-3, size(x,2));
 x_red = x(:,pls1_keep);
 
 xTest = xTest(:,pls1_keep);
@@ -90,7 +88,7 @@ Q2_med    = mean(Q2_folds,    1, 'omitnan');
 
 %
 
-ncomp = min(a_press_med,a_q2_med);   % number of LVs selected from CV plots
+ncomp = min(max(a_press_med,a_q2_med),maxLV);   % number of LVs selected from CV plots
 
 [XL,YL,XS,YS,BETA,PCTVAR,MSE,stats] = plsregress(x_red, y, ncomp);
 
@@ -106,7 +104,7 @@ mae_te  = mean(abs(res_te));
 %     ncomp, rmse_te, mae_te, r2_te);
 if doPlots == 1
 % Plots: mean curves (and optional fold distributions)
-    % figure('Name','LV selection (mean across folds)','Position',[80 80 980 390])
+    % figure;
     % subplot(1,2,1)
     % plot(1:maxLV, PRESS_med, '-o','LineWidth',1.3); grid on
     % xlabel('Number of latent variables'); ylabel('mean PRESS_{CV}')
@@ -119,8 +117,8 @@ if doPlots == 1
     % title(sprintf('Q^{2}_{CV} (mean, K=%d)', Keff));
     % ylim([min(-0.2, min(Q2_med)-0.05) 1]);
     % xline(a_q2_med,'--','Best by Q^{2}_{med}','LabelOrientation','horizontal','LabelVerticalAlignment','bottom');
-    % 
-    % %
+
+    %
     figure
     tiledlayout(2,2);
 
