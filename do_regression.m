@@ -1,5 +1,7 @@
 % functions pls1_regression.m and r2_pls1_forward_selection.m needed
-
+close all
+clearvars
+clc
 %% Loading data and separating to X(input variables) and Y(response variables)
 T = readtable("data_part_1.csv", ReadVariableNames=true,VariableNamingRule="preserve",ReadRowNames=true);
 Y = T(:,1:20);
@@ -40,5 +42,6 @@ for i=1:n
     xTest = X2(I2(:,i), :);
     yTest = (Y2(I2(:,i), i));
 
-    [ordered_by_pls1{i},ncomp(i),rmse_te(i),mae_te(i),yhat_te{i},res_te{i}] = pls1_regression(x,y,xTest,yTest,Kfold,maxLV,doPlots);
+    [ordered_by_pls1{i},ncomp(i),rmse_te(i),mae_te(i)] = pls1_regression(x,y,xTest,yTest,Kfold,maxLV,doPlots);
 end
+
