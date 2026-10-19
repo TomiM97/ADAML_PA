@@ -32,10 +32,11 @@ rng(0,"twister") % For reproducibility
 
 maxLV     = 20;          % largest number of latent variables tested
 Kfold     = 5;           % cross-validation folds
-doPlots = true;
+doPlots = false;
 
 [m,n] = size(rNames);
 
+tic
 for i=1:n
     x = X(I(:,i), :);
     y =(Y(I(:,i),i));
@@ -44,4 +45,25 @@ for i=1:n
 
     [ordered_by_pls1{i},ncomp(i),rmse_te(i),mae_te(i)] = pls1_regression(x,y,xTest,yTest,Kfold,maxLV,doPlots);
 end
+toc
+
+%%
+ref = mean(X, 1)';
+X = emsc_fun(X', ref, wavelengths(:))';
+X2 = emsc_fun(X2', ref, wavelengths(:))';
+
+tic
+for i=1:n
+    x = X(I(:,i), :);
+    y =(Y(I(:,i),i));
+    xTest = X2(I2(:,i), :);
+    yTest = (Y2(I2(:,i), i));
+
+    [ordered_by_pls1_emsc{i},ncomp_emsc(i),rmse_te_emsc(i),mae_te_emsc(i)] = pls1_regression(x,y,xTest,yTest,Kfold,maxLV,doPlots);
+end
+toc
+
+%%
+mae = [mae_te' mae_te_emsc'];
+rmse = [rmse_te' rmse_te_emsc'];
 
