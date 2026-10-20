@@ -28,7 +28,7 @@ yTest = (Ytest-ymu)/ysigma;
 
 varNames = 1:1:1721;
 
-[ordered_by_pls1, pls1_keep] = r2_pls1_forward_selection(x, y, varNames, 1e-3, size(x,2));
+[ordered_by_pls1, pls1_keep] = r2_pls1_forward_selection(x, y, varNames, 1e-3, maxLV);
 x_red = x(:,pls1_keep);
 
 xTest = xTest(:,pls1_keep);
