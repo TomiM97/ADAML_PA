@@ -1,4 +1,4 @@
-% functions pls1_regression.m and r2_pls1_forward_selection.m needed
+% functions pls1_R2_cal.m and r2_pls1_forward_selection.m needed
 close all
 clearvars
 clc
@@ -7,7 +7,7 @@ T = readtable("data_part_1.csv", ReadVariableNames=true,VariableNamingRule="pres
 Y = T(:,1:20);
 X = T(:,21:end);
 rNames = Y.Properties.VariableNames;
-wavelenghts = str2double(X.Properties.VariableNames);
+wavelengths = str2double(X.Properties.VariableNames);
 
 
 T2 = readtable("data_part_2.csv", ReadVariableNames=true,VariableNamingRule="preserve",ReadRowNames=true);
@@ -34,7 +34,7 @@ maxLV     = 20;          % largest number of latent variables tested
 Kfold     = 5;           % cross-validation folds
 doPlots = false;
 
-[m,n] = size(rNames);
+[m,n] = size(Y);
 
 tic
 for i=1:n
@@ -43,27 +43,49 @@ for i=1:n
     xTest = X2(I2(:,i), :);
     yTest = (Y2(I2(:,i), i));
 
-    [ordered_by_pls1{i},ncomp(i),rmse_te(i),mae_te(i)] = pls1_regression(x,y,xTest,yTest,Kfold,maxLV,doPlots);
+    [ordered_by_pls1{i},ncomp(i),BETA{i},rmse_te(i),mae_te(i)] = pls1_R2_cal(x,y,xTest,yTest,Kfold,maxLV,doPlots);
 end
 toc
 
 %%
 ref = mean(X, 1)';
-X = emsc_fun(X', ref, wavelengths(:))';
-X2 = emsc_fun(X2', ref, wavelengths(:))';
+X_emsc = emsc_fun(X', ref, wavelengths(:))';
+X2_emsc = emsc_fun(X2', ref, wavelengths(:))';
 
 tic
 for i=1:n
-    x = X(I(:,i), :);
-    y =(Y(I(:,i),i));
-    xTest = X2(I2(:,i), :);
+    x = X_emsc(I(:,i), :);
+    y = (Y(I(:,i),i));
+    xTest = X2_emsc(I2(:,i), :);
     yTest = (Y2(I2(:,i), i));
 
-    [ordered_by_pls1_emsc{i},ncomp_emsc(i),rmse_te_emsc(i),mae_te_emsc(i)] = pls1_regression(x,y,xTest,yTest,Kfold,maxLV,doPlots);
+    [ordered_by_pls1_emsc{i},ncomp_emsc(i),BETA_emsc{i},rmse_te_emsc(i),mae_te_emsc(i)] = pls1_R2_cal(x,y,xTest,yTest,Kfold,maxLV,doPlots);
 end
 toc
 
-%%
+%% for comparison
 mae = [mae_te' mae_te_emsc'];
 rmse = [rmse_te' rmse_te_emsc'];
+
+
+%% Predicting missing values to form a complete Y matrix
+In = isnan(Y);    
+In2 = isnan(Y2);
+Y_full = Y;
+
+for i=1:n
+    x = X(In(:,i), :);
+    x_miss = x(:,ordered_by_pls1{i});
+    yhat{i} = [ones(size(x_miss,1),1) x_miss]*BETA{i};
+    Y_full(In(:,i),i) = yhat{i};
+end
+
+Y_full_emsc = Y;
+
+for i=1:n
+    x_emsc = X_emsc(In(:,i), :);
+    x_miss_emsc = x_emsc(:,ordered_by_pls1_emsc{i});
+    yhat_emsc{i} = [ones(size(x_miss_emsc,1),1) x_miss_emsc]*BETA_emsc{i};
+    Y_full_emsc(In(:,i),i) = yhat_emsc{i};
+end
 
