@@ -11,7 +11,7 @@ T = readtable("data_part_1.csv", ReadVariableNames=true,VariableNamingRule="pres
 Y = T(:,1:20);
 X = T(:,21:end);
 rNames = Y.Properties.VariableNames;
-wavelenghts = str2double(X.Properties.VariableNames);
+wavelengths = str2double(X.Properties.VariableNames);
 
 T2 = readtable("data_part_2.csv", ReadVariableNames=true,VariableNamingRule="preserve",ReadRowNames=true);
 Y2 = T2(:,rNames);  % only the traits that are also in data_part_1
@@ -43,10 +43,10 @@ mi = min(X);
 ma = max(X);
 me = mean(X);
 figure;
-plot(wavelenghts,ma,'.')
+plot(wavelengths,ma,'.')
 hold on
-plot(wavelenghts, me,'.')
-plot(wavelenghts, mi,'.')
+plot(wavelengths, me,'.')
+plot(wavelengths, mi,'.')
 xlim([399 2501])
 xlabel("Wavelength [nm]");
 ylabel("Reflectance");
@@ -73,7 +73,7 @@ grid on;
 
 % PC1-PC3 loadings
 figure
-plot(wavelenghts, loadings(:,1:3), 'LineWidth', 1.2);
+plot(wavelengths, loadings(:,1:3), 'LineWidth', 1.2);
 xlabel('Wavelength (nm)');
 ylabel('Loading');
 
@@ -98,12 +98,6 @@ grid on;
 colorbar;
 
 
-%% separating based on trait
-
-for i = 1:20
-    x{i} = X(I(:,i),:); 
-    y{i} = Y(I(:,i),i);
-end
 
 
 
