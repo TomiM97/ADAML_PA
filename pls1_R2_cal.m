@@ -1,4 +1,4 @@
-function [ordered_by_pls1,ncomp,rmse_te,mae_te] = pls1_regression(X,Y,Xtest,Ytest,Kfold,maxLV,doPlots)
+function [ordered_by_pls1,ncomp,BETA,rmse_te,mae_te] = pls1_R2_cal(X,Y,Xtest,Ytest,Kfold,maxLV,doPlots)
 %
 %
 % Inputs:
@@ -15,6 +15,7 @@ function [ordered_by_pls1,ncomp,rmse_te,mae_te] = pls1_regression(X,Y,Xtest,Ytes
 % ordered_by_pls1 = indices of X matrix columns that were chosen as the
 %                   variables to be used based on the R2-method
 % ncomp = number of latent variables chosen
+% BETA = coefficient estimates for the PLS regression model
 % rmse_te = RMSE from the test set
 % mae_te = MAE from the test set
 % 
@@ -157,26 +158,4 @@ if doPlots == 1
     qqplot(res_te);
     title('Residual normal Q-Q plot');
 
-    %sgtitle(rNames{k}, 'Interpreter', 'none');
-    % figure('Name','Residual analysis (test set)','Position',[100 100 1050 350]);
-    % subplot(1,2,1)
-    % histogram(res_te, 20,'FaceColor',[0.2 0.6 0.8])
-    % xlabel('Residual'); ylabel('Frequency'); grid on
-    % title('Residual histogram')
-    % 
-    % subplot(1,2,2)
-    % % Simple ACF of residuals
-    % maxLag = 40;
-    % res_te_c = res_te - mean(res_te);
-    % acf = xcorr(res_te_c, maxLag, 'coeff');
-    % stem(0:maxLag, acf(maxLag+1:end), 'filled')
-    % xlabel('Lag'); ylabel('ACF'); grid on
-    % title('Residual autocorrelation')
-    % yline(0,'k-'); 
-    % 
-    % figure;
-    % scatter(yTest, yhat_te, 15, 'filled'); hold on
-    % plot(xlim, xlim,'k--','LineWidth',1.2); hold off
-    % xlabel('Observed y (test)'); ylabel('Predicted y (test)');
-    % title('Observed vs Predicted'); grid on; axis equal tight
 end
