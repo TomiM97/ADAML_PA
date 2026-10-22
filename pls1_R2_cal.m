@@ -1,6 +1,6 @@
-function [ordered_by_pls1,ncomp,BETA,rmse_te,mae_te] = pls1_R2_cal(X,Y,Xtest,Ytest,Kfold,maxLV,doPlots)
+function [ymu,ysigma,ordered_by_pls1,ncomp,BETA,rmse_te,mae_te] = pls1_R2_cal(X,Y,Xtest,Ytest,Kfold,maxLV,doPlots)
 %
-%
+% 
 % Inputs:
 % X = X matrix of predictors for training
 % Y = Y vector of response variables for training
@@ -12,6 +12,8 @@ function [ordered_by_pls1,ncomp,BETA,rmse_te,mae_te] = pls1_R2_cal(X,Y,Xtest,Yte
 % 
 %
 % Outputs:
+% ymu = mean of y
+% ysigma = standard deviation of y
 % ordered_by_pls1 = indices of X matrix columns that were chosen as the
 %                   variables to be used based on the R2-method
 % ncomp = number of latent variables chosen
@@ -24,8 +26,10 @@ function [ordered_by_pls1,ncomp,BETA,rmse_te,mae_te] = pls1_R2_cal(X,Y,Xtest,Yte
 
 x = X;
 [y, ymu, ysigma] = zscore(Y);
+%y = Y;
 xTest = Xtest;
 yTest = (Ytest-ymu)/ysigma;
+%yTest = Ytest;
 
 varNames = 1:1:1721;
 
