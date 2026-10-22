@@ -39,11 +39,10 @@ doPlots = false;
 tic
 for i=1:n
     x = X(I(:,i), :);
-    y =(Y(I(:,i),i));
+    y = Y(I(:,i),i);
     xTest = X2(I2(:,i), :);
-    yTest = (Y2(I2(:,i), i));
-
-    [ordered_by_pls1{i},ncomp(i),BETA{i},rmse_te(i),mae_te(i)] = pls1_R2_cal(x,y,xTest,yTest,Kfold,maxLV,doPlots);
+    yTest = Y2(I2(:,i), i);
+    [ymu(i),ysigma(i),ordered_by_pls1{i},ncomp(i),BETA{i},rmse_te(i),mae_te(i)] = pls1_R2_cal(x,y,xTest,yTest,Kfold,maxLV,doPlots);
 end
 toc
 
@@ -54,29 +53,29 @@ X2_emsc = emsc_fun(X2', ref, wavelengths(:))';
 
 tic
 for i=1:n
-    x = X_emsc(I(:,i), :);
+    x_emsc = X_emsc(I(:,i), :);
     y = (Y(I(:,i),i));
-    xTest = X2_emsc(I2(:,i), :);
+    xTest_emsc = X2_emsc(I2(:,i), :);
     yTest = (Y2(I2(:,i), i));
-
-    [ordered_by_pls1_emsc{i},ncomp_emsc(i),BETA_emsc{i},rmse_te_emsc(i),mae_te_emsc(i)] = pls1_R2_cal(x,y,xTest,yTest,Kfold,maxLV,doPlots);
+    [ymu_emsc(i),ysigma_emsc(i),ordered_by_pls1_emsc{i},ncomp_emsc(i),BETA_emsc{i},rmse_te_emsc(i),mae_te_emsc(i)] = pls1_R2_cal(x_emsc,y,xTest_emsc,yTest,Kfold,maxLV,doPlots);
 end
 toc
 
 %% for comparison
-mae = [mae_te' mae_te_emsc'];
-rmse = [rmse_te' rmse_te_emsc'];
+mae = [sum(mae_te)' sum(mae_te_emsc)'];
+rmse = [sum(rmse_te)' sum(rmse_te_emsc)'];
 
 
 %% Predicting missing values to form a complete Y matrix
 In = isnan(Y);    
 In2 = isnan(Y2);
+%%
 Y_full = Y;
 
 for i=1:n
     x = X(In(:,i), :);
     x_miss = x(:,ordered_by_pls1{i});
-    yhat{i} = [ones(size(x_miss,1),1) x_miss]*BETA{i};
+    yhat{i} = (([ones(size(x_miss,1),1) x_miss]*BETA{i})+ymu(i))*ysigma(i);
     Y_full(In(:,i),i) = yhat{i};
 end
 
@@ -85,7 +84,7 @@ Y_full_emsc = Y;
 for i=1:n
     x_emsc = X_emsc(In(:,i), :);
     x_miss_emsc = x_emsc(:,ordered_by_pls1_emsc{i});
-    yhat_emsc{i} = [ones(size(x_miss_emsc,1),1) x_miss_emsc]*BETA_emsc{i};
+    yhat_emsc{i} = (([ones(size(x_miss_emsc,1),1) x_miss_emsc]*BETA_emsc{i})+ymu_emsc(i))*ysigma_emsc(i);
     Y_full_emsc(In(:,i),i) = yhat_emsc{i};
 end
 
