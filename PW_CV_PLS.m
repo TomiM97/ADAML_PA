@@ -2,6 +2,7 @@ close all
 clearvars
 clc
 addpath('functions')
+addpath('common')
 % Advanced data analysis and machine learning
 % project
 
@@ -210,30 +211,131 @@ plot_lv_heatmap(Q2cvMean, rNames, ...
 toc
 % nLVchosen(11) = 4;                         % manual override after inspecting the heatmap
 
-%% 5. Final PLS model per trait and testing
-BETAall  = cell(1, numOfvariables);          % BETAall{k}(1) = intercept, (2:end) = coefficients
-R2test   = nan(numOfvariables,1);
-RMSEtest = nan(numOfvariables,1);
-MAEtest  = nan(numOfvariables,1);
-Q2atLV   = nan(numOfvariables,1);
+%% 5. Final K-PLS model per trait and independent testing
+
+KPLSmodels = cell(numOfvariables, 1);
+KPLSpredictions = cell(numOfvariables, 1);
+
+KPLS_R2 = nan(numOfvariables, 1);
+KPLS_RMSE = nan(numOfvariables, 1);
+KPLS_MAE = nan(numOfvariables, 1);
 
 for k = 1:numOfvariables
-    if isnan(nLVchosen(k)), continue; end
-    Q2atLV(k) = Q2cvMean(k, nLVchosen(k));
 
-    [~,~,~,~,BETA] = plsregress(xTrain{k}, yTrain{k}, nLVchosen(k));
-    res = yTest{k} - pls_predict(BETA, xTest{k});
-    BETAall{k} = BETA;
+    fprintf('\nK-PLS: trait %d/%d: %s\n', ...
+        k, numOfvariables, rNames{k});
 
-    R2test(k)   = 1 - sum(res.^2) / sum((yTest{k} - mean(yTest{k})).^2);
-    RMSEtest(k) = sqrt(mean(res.^2));
-    MAEtest(k)  = mean(abs(res));
+    if isnan(nLVchosen(k))
+        warning('No valid LV selection for %s. Skipping.', rNames{k});
+        continue
+    end
+
+    % Retrieve training and independent test data for this trait.
+    XtrainK = xTrain{k};
+    YtrainK = yTrain{k};
+
+    XtestK = xTest{k};
+    YtestK = yTest{k};
+
+    % Remove invalid training observations.
+    validTrain = all(isfinite(XtrainK), 2) & isfinite(YtrainK);
+    XtrainK = XtrainK(validTrain, :);
+    YtrainK = YtrainK(validTrain);
+
+    % Remove invalid test observations.
+    validTest = all(isfinite(XtestK), 2) & isfinite(YtestK);
+    XtestK = XtestK(validTest, :);
+    YtestK = YtestK(validTest);
+
+    if size(XtrainK, 1) < 3 || isempty(XtestK)
+        warning('Insufficient training or test observations for %s.', ...
+            rNames{k});
+        continue
+    end
+
+    % Scale using training data only.
+    muX = mean(XtrainK, 1);
+    stdX = std(XtrainK, 0, 1);
+    stdX(stdX == 0 | ~isfinite(stdX)) = 1;
+
+    muY = mean(YtrainK);
+    stdY = std(YtrainK);
+
+    if stdY == 0 || ~isfinite(stdY)
+        warning('Trait %s has zero response variance.', rNames{k});
+        continue
+    end
+
+    XtrainScaled = (XtrainK - muX) ./ stdX;
+    XtestScaled = (XtestK - muX) ./ stdX;
+
+    YtrainScaled = (YtrainK - muY) ./ stdY;
+
+    % Initialize model.
+    model = struct();
+
+    model.X = XtrainScaled;
+    model.Y = YtrainScaled;
+
+    model.Xtest = XtestScaled;
+    model.Ytest = (YtestK - muY) ./ stdY;
+
+    % Regression, not classification.
+    model.classification = 0;
+    model.regrType = 2;
+
+    % Kernel settings.
+    model.kernelType = "matern1/2";
+    model.initialParam = [1, 1];
+    model.params = exp(model.initialParam);
+
+    % Additional toolbox parameters.
+    model.nsamp = 1;
+    model.learnRate = 0.1;
+    model.dim = min(nLVchosen(k), size(XtrainScaled, 2));
+    model.iter = 1000;
+    model.center = 1;
+    model.plot = 0;
+    model.sp = 0.5;
+    model.momentum = 1;
+    model.family = 0;
+    model.redPredict = 0;
+
+    % Fit/predict using the current kernel parameters.
+    model = predict(model);
+
+    % Convert predictions back to the original trait scale.
+    yhat = model.ypred(:) * stdY + muY;
+    yobs = YtestK(:);
+
+    if numel(yhat) ~= numel(yobs)
+        error('Prediction and observation counts differ for %s.', ...
+            rNames{k});
+    end
+
+    % Store results.
+    KPLSmodels{k} = model;
+    KPLSpredictions{k} = yhat;
+
+    residual = yobs - yhat;
+
+    KPLS_RMSE(k) = sqrt(mean(residual.^2));
+    KPLS_MAE(k) = mean(abs(residual));
+
+    SST = sum((yobs - mean(yobs)).^2);
+
+    if SST > 0
+        KPLS_R2(k) = 1 - sum(residual.^2) / SST;
+    end
+
 end
 
-summaryTable = table(rNames', cellfun(@numel,yTrain)', cellfun(@numel,yTest)', nLVchosen, ...
-    Q2atLV, R2test, RMSEtest, MAEtest, 'VariableNames', ...
-    {'Trait','nTrain','nTest','nLV','Q2_cv','R2_test','RMSE_test','MAE_test'});
-disp(summaryTable)
+% Summarize independent test performance.
+KPLS_summary = table( ...
+    rNames(:), KPLS_R2, KPLS_RMSE, KPLS_MAE, ...
+    'VariableNames', {'Trait','R2_test','RMSE_test','MAE_test'});
+
+disp(KPLS_summary)
 
 %% 6. Plots for one trait
 
